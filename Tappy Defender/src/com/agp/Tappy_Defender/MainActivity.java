@@ -13,7 +13,7 @@ import android.widget.Button;
  * To format code = ctrl + alt + L
  * To run class = ctrl +  shift + F10
  */
-public class Activity extends android.app.Activity implements View.OnClickListener
+public class MainActivity extends android.app.Activity implements View.OnClickListener
 {
     /**
      * Called when the activity is first created.
