@@ -15,6 +15,8 @@ import android.widget.Button;
  */
 public class MainActivity extends android.app.Activity implements View.OnClickListener
 {
+
+
     /**
      * Called when the activity is first created.
      */
@@ -29,7 +31,7 @@ public class MainActivity extends android.app.Activity implements View.OnClickLi
         playButton.setOnClickListener(this);
     }
 
-    //The button is just there for visual purposes but the user can press anywhere to begin.
+    //There is only 1 button so this is acceptable.
     @Override
     public void onClick(View v)
     {
