@@ -3,6 +3,7 @@ package com.agp.Tappy_Defender;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 
 
 /**
@@ -16,7 +17,7 @@ import android.graphics.BitmapFactory;
 public class PlayerShip
 {
     private Bitmap mBitmap;
-    private int x, y;
+    private int mBitmapXCorner, mBitmapYCorner;  //x and y are of the top left point of the bitmap
     private int mSpeed = 0;  //how fast the ship will travel
     private boolean mBoosting;
     private int maxY; //screen boundaries
@@ -26,10 +27,13 @@ public class PlayerShip
     private static final int MIN_SPEED = 1;  //the min speed
     private static final int MAX_SPEED = 20; //a random number chosen for max speed -- may need adjusting
 
+    //A hit box for collision detection
+    private Rect mHitBox;
+
     public PlayerShip(Context context, int screenX, int screenY)
     {
-        x = 50;
-        y = 50;
+        mBitmapXCorner = 50;
+        mBitmapYCorner = 50;
         mSpeed = 1;
         //loads the graphic
         mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.ship);
@@ -37,6 +41,7 @@ public class PlayerShip
         maxY = screenY - mBitmap.getHeight(); //this is the screen bottom
         minY = 0; //this is the screen top
 
+        mHitBox = new Rect(mBitmapXCorner, mBitmapYCorner, mBitmap.getWidth(), mBitmap.getHeight());
     }
 
     public void update()
@@ -60,13 +65,19 @@ public class PlayerShip
         }
 
         //move ship vertically
-        y -= mSpeed + GRAVITY;
+        mBitmapYCorner -= mSpeed + GRAVITY;
 
         //keep ship on screen
-        if (y < minY)
-            y = minY;
-        if(y > maxY)
-            y = maxY;
+        if (mBitmapYCorner < minY)
+            mBitmapYCorner = minY;
+        if(mBitmapYCorner > maxY)
+            mBitmapYCorner = maxY;
+
+        //refresh placement of hit box location
+        mHitBox.left = mBitmapXCorner;
+        mHitBox.top = mBitmapYCorner;
+        mHitBox.right = mBitmapXCorner + mBitmap.getWidth();
+        mHitBox.bottom = mBitmapYCorner + mBitmap.getHeight();
     }
 
     public Bitmap getBitmap()
@@ -74,14 +85,14 @@ public class PlayerShip
         return mBitmap;
     }
 
-    public int getX()
+    public int getPlayerPosX()
     {
-        return x;
+        return mBitmapXCorner;
     }
 
-    public int getY()
+    public int getBitmapYCorner()
     {
-        return y;
+        return mBitmapYCorner;
     }
 
     public int getSpeed()
@@ -93,6 +104,9 @@ public class PlayerShip
     {
         mBoosting = boosting;
     }
+
+    public Rect getHitBox()
+    {
+        return mHitBox;
+    }
 }
-
-

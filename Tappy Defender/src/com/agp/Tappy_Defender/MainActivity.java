@@ -19,7 +19,6 @@ import android.widget.Button;
 public class MainActivity extends Activity implements View.OnClickListener
 {
 
-
     /**
      * Called when the activity is first created.
      */

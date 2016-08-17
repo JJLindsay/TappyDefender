@@ -4,6 +4,8 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -22,6 +24,8 @@ import android.view.SurfaceView;
  */
 public class TDView extends SurfaceView implements Runnable
 {
+    private static final String TAG = "com.agp.Tappy_Defender.TDView";
+
     //a volatile variable can be viewed (and altered) across threads. Very dangerous if not careful!
     volatile boolean playing;
 
@@ -68,12 +72,19 @@ public class TDView extends SurfaceView implements Runnable
 
     public void update()
     {
+        for (int index = 0; index < mEnemyShips.length; index++)
+        {
+            if (Rect.intersects(mPlayerShip.getHitBox(), mEnemyShips[index].getHitBox()))
+                mEnemyShips[index].setBitmapXCorner(-200);  //remove it well off the screen for this frame. On the next frame, its update will reposition it.
+        }
+
         mPlayerShip.update();
         for (int index = 0; index < mEnemyShips.length; index++)
             mEnemyShips[index].update(mPlayerShip.getSpeed());
 
         for (int index = 0; index < mSpaceDusts.length; index++)
             mSpaceDusts[index].update(mPlayerShip.getSpeed());
+
     }
 
     public void draw()
@@ -84,8 +95,7 @@ public class TDView extends SurfaceView implements Runnable
             mCanvas = mSurfaceHolder.lockCanvas();
 
             //clear the last frame. argb = alpha red green blue
-            mCanvas.drawColor(Color.argb(255, 0, 0, 0));
-
+            mCanvas.drawColor(Color.argb(255, 0, 0, 0));  //alpha is white or Opaque/not transparent
 
             //white specs of dust
             mPaint.setColor(Color.argb(255,255,255,255));
@@ -94,13 +104,23 @@ public class TDView extends SurfaceView implements Runnable
             for (int index = 0; index < mSpaceDusts.length; index++)
                 mCanvas.drawPoint(mSpaceDusts[index].getX(), mSpaceDusts[index].getY(), mPaint);
 
+            //ENTERING DEBUG CODE  ----------------
+
+            mPaint.setColor(Color.argb(255, 255, 255, 255));  //set the paint color
+            //whitens the hit box to white
+            mCanvas.drawRect(mPlayerShip.getHitBox().left, mPlayerShip.getHitBox().top, mPlayerShip.getHitBox().right, mPlayerShip.getHitBox().bottom, mPaint);
+
+            for (int index = 0; index < mEnemyShips.length; index++)
+                mCanvas.drawRect(mEnemyShips[index].getHitBox().left, mEnemyShips[index].getHitBox().top, mEnemyShips[index].getHitBox().right, mEnemyShips[index].getHitBox().bottom, mPaint);
+
+            //EXITING DEBUG CODE  ----------------
+
             //draw the player
-            mCanvas.drawBitmap(mPlayerShip.getBitmap(), mPlayerShip.getX(), mPlayerShip.getY(), mPaint);
+            mCanvas.drawBitmap(mPlayerShip.getBitmap(), mPlayerShip.getPlayerPosX(), mPlayerShip.getBitmapYCorner(), mPaint);
 
             //draw the enemies
             for (int index = 0; index < mEnemyShips.length; index++)
-                    mCanvas.drawBitmap(mEnemyShips[index].getBitmap(), mEnemyShips[index].getX(), mEnemyShips[index].getY(), mPaint);
-
+                    mCanvas.drawBitmap(mEnemyShips[index].getBitmap(), mEnemyShips[index].getX(), mEnemyShips[index].getBitmapYCorner(), mPaint);
 
             //unlock and draw scene
             mSurfaceHolder.unlockCanvasAndPost(mCanvas);
@@ -115,7 +135,7 @@ public class TDView extends SurfaceView implements Runnable
         try
         {
             /*  Android time is measured in milliseconds
-                60 frames per sec = 1sec/60 frames = 1 frame every 0.0166 secs or 16.67 ms
+                60 frames per sec = 60 frames/1 sec = 1 frame every 0.0166 secs or 16.67 ms
                 Stop updating and drawing for 17ms to maintain 60FPS.  */
             mGameThread.sleep(17);
         } catch (InterruptedException e)
@@ -133,7 +153,7 @@ public class TDView extends SurfaceView implements Runnable
             mGameThread.join();
         } catch (InterruptedException e)
         {
-
+            //e.printStackTrace();
         }
     }
 
@@ -148,7 +168,7 @@ public class TDView extends SurfaceView implements Runnable
     }
 
     /**
-     * SurfaceView allows to handle onTouchEvents
+     * SurfaceView allows us to handle onTouchEvents
      * @param motionEvent
      * @return
      */

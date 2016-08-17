@@ -3,6 +3,7 @@ package com.agp.Tappy_Defender;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 
 import java.util.Random;
 
@@ -18,7 +19,7 @@ import java.util.Random;
 public class EnemyShip
 {
     private Bitmap mBitmap;
-    private int x, y;
+    private int mBitmapXCorner, mBitmapYCorner;
     private int mSpeed = -1;
 
     //detect enemy leaving screen
@@ -29,8 +30,12 @@ public class EnemyShip
     private int maxY;
     private int minY;
 
+    //A hit box for collision detection
+    private Rect mHitBox;
+
     public EnemyShip(Context context, int screenX, int screenY)
     {
+        //loads the graphic
         mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy);
         maxX = screenX;
         maxY = screenY;
@@ -40,24 +45,32 @@ public class EnemyShip
         Random generator = new Random();
         mSpeed = generator.nextInt(6) + 10;
 
-        x = screenX;
-        y = generator.nextInt(maxY) - mBitmap.getHeight();
+        mBitmapXCorner = screenX;  //place enemy at the right edge of the screen
+        mBitmapYCorner = generator.nextInt(maxY) - mBitmap.getHeight();  //place enemy at a random Y position
+
+        mHitBox = new Rect(mBitmapXCorner, mBitmapYCorner, mBitmap.getWidth(), mBitmap.getHeight());
     }
 
     public void update(int playerSpeed)
     {
         //move enemy left
-        x -= playerSpeed;
-        x -= mSpeed;
+        mBitmapXCorner -= playerSpeed;
+        mBitmapXCorner -= mSpeed;
 
         //respawn when off screen
-        if (x < minX - mBitmap.getWidth())
+        if (mBitmapXCorner < minX - mBitmap.getWidth())
         {
             Random generator = new Random();
             mSpeed = generator.nextInt(10) + 10;
-            x = maxX;
-            y = generator.nextInt(maxY) - mBitmap.getHeight();
+            mBitmapXCorner = maxX;
+            mBitmapYCorner = generator.nextInt(maxY) - mBitmap.getHeight();
         }
+
+        //refresh placement of hit box location
+        mHitBox.left = mBitmapXCorner;
+        mHitBox.top = mBitmapYCorner;
+        mHitBox.right = mBitmapXCorner + mBitmap.getWidth();
+        mHitBox.bottom = mBitmapYCorner + mBitmap.getHeight();
     }
 
     public Bitmap getBitmap()
@@ -67,11 +80,21 @@ public class EnemyShip
 
     public int getX()
     {
-        return x;
+        return mBitmapXCorner;
     }
 
-    public int getY()
+    public int getBitmapYCorner()
     {
-        return y;
+        return mBitmapYCorner;
+    }
+
+    public Rect getHitBox()
+    {
+        return mHitBox;
+    }
+
+    public void setBitmapXCorner(int bitmapXCorner)
+    {
+        mBitmapXCorner = bitmapXCorner;
     }
 }
