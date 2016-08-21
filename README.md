@@ -3,6 +3,7 @@
 This is an AGP By Example Android project that I will be working through.
 <br/>When it is finished, it will be a Flappy Bird clone.
 
-Current State:
--A basic collision detection is now in place and the collision box is visible to debugging purposes.
+<b>Current State:</b>
+-Added a HUD which dislays speed, time, shield, and distance. The numbers in place are just placeholders.
+-The collision box is still visible for debugging purposes.
 

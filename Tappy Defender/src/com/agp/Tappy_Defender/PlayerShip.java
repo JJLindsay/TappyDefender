@@ -30,11 +30,14 @@ public class PlayerShip
     //A hit box for collision detection
     private Rect mHitBox;
 
+    private int mShieldStrength;
+
     public PlayerShip(Context context, int screenX, int screenY)
     {
         mBitmapXCorner = 50;
         mBitmapYCorner = 50;
         mSpeed = 1;
+        mShieldStrength = 2;
         //loads the graphic
         mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.ship);
         mBoosting = false;
@@ -108,5 +111,10 @@ public class PlayerShip
     public Rect getHitBox()
     {
         return mHitBox;
+    }
+
+    public int getShieldStrength()
+    {
+        return mShieldStrength;
     }
 }

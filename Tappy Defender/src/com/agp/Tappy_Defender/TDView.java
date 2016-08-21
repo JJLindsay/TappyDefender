@@ -43,6 +43,14 @@ public class TDView extends SurfaceView implements Runnable
     private static final boolean STOP_BOOSTING = false;
     private static final boolean START_BOOSTING = true;
 
+    //HUD display variables
+    private float mDistanceRemaining;
+    private long mTimeTaken;
+    private long mTimeStarted;
+    private long mFastestTime;
+    private int mScreenX;
+    private int mScreenY;
+
     public TDView(Context context, int screenX, int screenY)
     {
         super(context);
@@ -57,6 +65,8 @@ public class TDView extends SurfaceView implements Runnable
         for (int index = 0; index < mSpaceDusts.length; index++)
             mSpaceDusts[index] = new SpaceDust(screenX, screenY);
 
+        mScreenX = screenX;
+        mScreenY = screenY;
     }
 
     @Override
@@ -121,6 +131,17 @@ public class TDView extends SurfaceView implements Runnable
             //draw the enemies
             for (int index = 0; index < mEnemyShips.length; index++)
                     mCanvas.drawBitmap(mEnemyShips[index].getBitmap(), mEnemyShips[index].getX(), mEnemyShips[index].getBitmapYCorner(), mPaint);
+
+            //Drawing the HUD
+            mPaint.setTextAlign(Paint.Align.LEFT);
+            mPaint.setColor(Color.argb(255, 255, 255, 255));  //alpha set to solid, rgb set to white
+            mPaint.setTextSize(25);
+            //drawText(message, x-coord, y-coord, paint-style)
+            mCanvas.drawText("Fastest:" + mFastestTime + "s", 10, 20, mPaint);  //mPaint defines alignment, color, and size
+            mCanvas.drawText("Time:" + mTimeTaken + "s", mScreenX/2, 20, mPaint);
+            mCanvas.drawText("Distance:" + mDistanceRemaining/1000 + " KM", mScreenX/3, mScreenY-20, mPaint);
+            mCanvas.drawText("Shield:" + mPlayerShip.getShieldStrength(), 10, mScreenY-20, mPaint);
+            mCanvas.drawText("Speed:" + mPlayerShip.getSpeed()*60 + " MPS", (mScreenX/3)*2, mScreenY-20, mPaint);
 
             //unlock and draw scene
             mSurfaceHolder.unlockCanvasAndPost(mCanvas);
