@@ -62,7 +62,7 @@ public class PlayerShip
             mSpeed = MAX_SPEED;
         }
 
-        //never stop completely
+        //never stop moving completely
         if (mSpeed < MIN_SPEED){
             mSpeed = MIN_SPEED;
         }
@@ -81,6 +81,11 @@ public class PlayerShip
         mHitBox.top = mBitmapYCorner;
         mHitBox.right = mBitmapXCorner + mBitmap.getWidth();
         mHitBox.bottom = mBitmapYCorner + mBitmap.getHeight();
+    }
+
+    public int reduceShieldStrength()
+    {
+        return mShieldStrength--;
     }
 
     public Bitmap getBitmap()

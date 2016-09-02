@@ -14,7 +14,8 @@ import android.widget.Button;
  * To format code = ctrl + alt + L
  * To run class = ctrl +  shift + F10
  *
- * The game begins here to display the home screen.
+ * The game begins here.
+ * This class inflates the start screen.
  */
 public class MainActivity extends Activity implements View.OnClickListener
 {

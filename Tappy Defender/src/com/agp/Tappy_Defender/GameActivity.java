@@ -26,12 +26,12 @@ public class GameActivity extends Activity
     {
         super.onCreate(savedInstanceState);
 
-        //Get and display object to access screen details
+        //Get the device Display
         Display display = getWindowManager().getDefaultDisplay();
-        //load resolution into point object. Point holds two integer coordinates
+        //Point can hold two integers
         Point size = new Point();
-        display.getSize(size);  //sets x and y of Point size
-        //creates an instance fo TDView and passes in context of the app
+        display.getSize(size);  //set the x and y to Point
+        //passes the context of the app plus the device display size
         mGameView = new TDView(this, size.x, size.y);
         //Make mGameView the view for this activity
         setContentView(mGameView);

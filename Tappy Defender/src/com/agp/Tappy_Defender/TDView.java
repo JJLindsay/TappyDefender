@@ -1,14 +1,20 @@
 package com.agp.Tappy_Defender;
 
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
+import android.content.res.AssetManager;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.media.AudioManager;
+import android.media.SoundPool;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import java.io.IOException;
 
 /**
  * To comment out a line = ctrl + (keypad /)
@@ -17,14 +23,14 @@ import android.view.SurfaceView;
  * To remove unused imports = ctrl + alt + o
  * To format code = ctrl + alt + L
  * To run class = ctrl +  shift + F10
- *
+ * <p/>
  * This is a dynamically generating view (as opposed to xml views). Its the game view after the home screen
  * SurfaceView provides a dedicated drawing surface embedded inside of a view
- *
  */
 public class TDView extends SurfaceView implements Runnable
 {
     private static final String TAG = "com.agp.Tappy_Defender.TDView";
+    private Context mContext;
 
     //a volatile variable can be viewed (and altered) across threads. Very dangerous if not careful!
     volatile boolean playing;
@@ -51,22 +57,65 @@ public class TDView extends SurfaceView implements Runnable
     private int mScreenX;
     private int mScreenY;
 
+    private boolean mGameEnded;
+
+    private SoundPool mSoundPool;
+    int mStart, mBump, mDestroyed, mWin = -1;
+
     public TDView(Context context, int screenX, int screenY)
     {
         super(context);
+        this.mContext = context;
+
+        mSoundPool = new SoundPool(10, AudioManager.STREAM_MUSIC, 0);
+        try
+        {
+            AssetManager assetManager = context.getAssets();
+            AssetFileDescriptor descriptor;
+
+            descriptor = assetManager.openFd("start.ogg");
+            mStart = mSoundPool.load(descriptor, 0);
+
+            descriptor = assetManager.openFd("win.ogg");
+            mWin = mSoundPool.load(descriptor, 0);
+
+            descriptor = assetManager.openFd("bump.ogg");
+            mBump = mSoundPool.load(descriptor, 0);
+
+            descriptor = assetManager.openFd("destroy.ogg");
+            mDestroyed = mSoundPool.load(descriptor, 0);
+        } catch (IOException e)
+        {
+            Log.e("error", "failed to load sound files");
+        }
 
         mSurfaceHolder = getHolder();
         mPaint = new Paint();
-        mPlayerShip = new PlayerShip(context, screenX, screenY);
-
-        for (int index = 0; index < mEnemyShips.length; index++)
-            mEnemyShips[index] = new EnemyShip(context, screenX, screenY);
-
-        for (int index = 0; index < mSpaceDusts.length; index++)
-            mSpaceDusts[index] = new SpaceDust(screenX, screenY);
-
         mScreenX = screenX;
         mScreenY = screenY;
+
+        startGame();
+    }
+
+    private void startGame()
+    {
+        mGameEnded = false;
+        mPlayerShip = new PlayerShip(mContext, mScreenX, mScreenY);
+
+        for (int index = 0; index < mEnemyShips.length; index++)
+            mEnemyShips[index] = new EnemyShip(mContext, mScreenX, mScreenY);
+
+        for (int index = 0; index < mSpaceDusts.length; index++)
+            mSpaceDusts[index] = new SpaceDust(mScreenX, mScreenY);
+
+        //reset the distance and time
+        mDistanceRemaining = 10000;  //10km
+        mTimeTaken = 0;
+
+        //get start time
+        mTimeStarted = System.currentTimeMillis();
+
+        mSoundPool.play(mStart, 1, 1, 0, 0, 1);
     }
 
     @Override
@@ -80,21 +129,63 @@ public class TDView extends SurfaceView implements Runnable
         }
     }
 
+    //game ends if shield depletes or reach earth
     public void update()
     {
+        boolean mHitDetected = false;
+
+        //Check for collision
         for (int index = 0; index < mEnemyShips.length; index++)
         {
             if (Rect.intersects(mPlayerShip.getHitBox(), mEnemyShips[index].getHitBox()))
-                mEnemyShips[index].setBitmapXCorner(-200);  //remove it well off the screen for this frame. On the next frame, its update will reposition it.
+            {
+                mEnemyShips[index].setBitmapXCorner(-100);  //remove it well off the screen for this frame. On the next frame, its update will reposition it.
+                mHitDetected = true;
+            }
         }
 
+        if (mHitDetected)
+        {
+            mSoundPool.play(mBump, 1, 1, 0, 0, 1);
+            mPlayerShip.reduceShieldStrength();
+
+            if (mPlayerShip.getShieldStrength() < 0)
+            {
+                mSoundPool.play(mDestroyed, 1, 1, 0, 0, 1);
+                mGameEnded = true;
+            }
+        }
+
+        //update all objects
         mPlayerShip.update();
+
         for (int index = 0; index < mEnemyShips.length; index++)
             mEnemyShips[index].update(mPlayerShip.getSpeed());
 
         for (int index = 0; index < mSpaceDusts.length; index++)
             mSpaceDusts[index].update(mPlayerShip.getSpeed());
 
+
+        //if collision hasn't ended the game
+        if (!mGameEnded)
+        {
+            mDistanceRemaining -= mPlayerShip.getSpeed();
+            mTimeTaken = System.currentTimeMillis() - mTimeStarted;
+        }
+
+        //if final destination has been reached
+        if (mDistanceRemaining <= 0)
+        {
+            mSoundPool.play(mWin, 1,1,0,0,1);
+            if (mTimeTaken < mFastestTime)
+            {
+                mFastestTime = mTimeTaken;
+            }
+
+            //avoid negative distance
+            mDistanceRemaining = 0;
+            mGameEnded = true;
+        }
     }
 
     public void draw()
@@ -108,7 +199,7 @@ public class TDView extends SurfaceView implements Runnable
             mCanvas.drawColor(Color.argb(255, 0, 0, 0));  //alpha is white or Opaque/not transparent
 
             //white specs of dust
-            mPaint.setColor(Color.argb(255,255,255,255));
+            mPaint.setColor(Color.argb(255, 255, 255, 255));
 
             //draw space dust FIRST so the actors are overlaid
             for (int index = 0; index < mSpaceDusts.length; index++)
@@ -116,12 +207,12 @@ public class TDView extends SurfaceView implements Runnable
 
             //ENTERING DEBUG CODE  ----------------
 
-            mPaint.setColor(Color.argb(255, 255, 255, 255));  //set the paint color
-            //whitens the hit box to white
-            mCanvas.drawRect(mPlayerShip.getHitBox().left, mPlayerShip.getHitBox().top, mPlayerShip.getHitBox().right, mPlayerShip.getHitBox().bottom, mPaint);
-
-            for (int index = 0; index < mEnemyShips.length; index++)
-                mCanvas.drawRect(mEnemyShips[index].getHitBox().left, mEnemyShips[index].getHitBox().top, mEnemyShips[index].getHitBox().right, mEnemyShips[index].getHitBox().bottom, mPaint);
+//            mPaint.setColor(Color.argb(255, 255, 255, 255));  //set the paint color
+//            //whitens the hit box to white
+//            mCanvas.drawRect(mPlayerShip.getHitBox().left, mPlayerShip.getHitBox().top, mPlayerShip.getHitBox().right, mPlayerShip.getHitBox().bottom, mPaint);
+//
+//            for (int index = 0; index < mEnemyShips.length; index++)
+//                mCanvas.drawRect(mEnemyShips[index].getHitBox().left, mEnemyShips[index].getHitBox().top, mEnemyShips[index].getHitBox().right, mEnemyShips[index].getHitBox().bottom, mPaint);
 
             //EXITING DEBUG CODE  ----------------
 
@@ -130,19 +221,36 @@ public class TDView extends SurfaceView implements Runnable
 
             //draw the enemies
             for (int index = 0; index < mEnemyShips.length; index++)
-                    mCanvas.drawBitmap(mEnemyShips[index].getBitmap(), mEnemyShips[index].getX(), mEnemyShips[index].getBitmapYCorner(), mPaint);
+                mCanvas.drawBitmap(mEnemyShips[index].getBitmap(), mEnemyShips[index].getX(), mEnemyShips[index].getBitmapYCorner(), mPaint);
 
-            //Drawing the HUD
-            mPaint.setTextAlign(Paint.Align.LEFT);
-            mPaint.setColor(Color.argb(255, 255, 255, 255));  //alpha set to solid, rgb set to white
-            mPaint.setTextSize(25);
-            //drawText(message, x-coord, y-coord, paint-style)
-            mCanvas.drawText("Fastest:" + mFastestTime + "s", 10, 20, mPaint);  //mPaint defines alignment, color, and size
-            mCanvas.drawText("Time:" + mTimeTaken + "s", mScreenX/2, 20, mPaint);
-            mCanvas.drawText("Distance:" + mDistanceRemaining/1000 + " KM", mScreenX/3, mScreenY-20, mPaint);
-            mCanvas.drawText("Shield:" + mPlayerShip.getShieldStrength(), 10, mScreenY-20, mPaint);
-            mCanvas.drawText("Speed:" + mPlayerShip.getSpeed()*60 + " MPS", (mScreenX/3)*2, mScreenY-20, mPaint);
+            if (!mGameEnded)
+            {
+                //Drawing the HUD
+                mPaint.setTextAlign(Paint.Align.LEFT);
+                mPaint.setColor(Color.argb(255, 255, 255, 255));  //alpha set to solid, rgb set to white
+                mPaint.setTextSize(25);
+                //drawText(message, x-coord, y-coord, paint-style)
+                mCanvas.drawText("Fastest:" + mFastestTime + "s", 10, 20, mPaint);  //mPaint defines alignment, color, and size
+                mCanvas.drawText("Time:" + mTimeTaken + "s", mScreenX / 2, 20, mPaint);
+                mCanvas.drawText("Distance:" + mDistanceRemaining / 1000 + " KM", mScreenX / 3, mScreenY - 20, mPaint);
+                mCanvas.drawText("Shield:" + mPlayerShip.getShieldStrength(), 10, mScreenY - 20, mPaint);
+                mCanvas.drawText("Speed:" + mPlayerShip.getSpeed() * 60 + " MPS", (mScreenX / 3) * 2, mScreenY - 20, mPaint);
+            } else
+            {
+                //show pause screen
+                mPaint.setTextSize(80);
+                mPaint.setTextAlign(Paint.Align.CENTER);
+                mCanvas.drawText("Game Over", mScreenX / 2, 100, mPaint);
 
+                mPaint.setTextSize(25);
+                mCanvas.drawText("Fastest:" + mFastestTime + "s", mScreenX / 2, 160, mPaint);  //mPaint defines alignment, color, and size
+                mCanvas.drawText("Time:" + mTimeTaken + "s", mScreenX / 2, 200, mPaint);
+                mCanvas.drawText("Distance:" + mDistanceRemaining / 1000 + " KM", mScreenX / 2, 240, mPaint);
+                mCanvas.drawText("Tap to replay!", mScreenX / 2, 350, mPaint);
+
+                //has the player tapped the screen?
+
+            }
             //unlock and draw scene
             mSurfaceHolder.unlockCanvasAndPost(mCanvas);
         }
@@ -190,6 +298,7 @@ public class TDView extends SurfaceView implements Runnable
 
     /**
      * SurfaceView allows us to handle onTouchEvents
+     *
      * @param motionEvent
      * @return
      */
@@ -206,9 +315,15 @@ public class TDView extends SurfaceView implements Runnable
             case (MotionEvent.ACTION_DOWN):
                 //boost player
                 mPlayerShip.setBoosting(START_BOOSTING);
+
+                //if we are on the pause screen, start a new game
+                if (mGameEnded)
+                    startGame();
                 break;
         }
 
         return true;
     }
+
+
 }

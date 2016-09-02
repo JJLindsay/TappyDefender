@@ -46,7 +46,7 @@ public class EnemyShip
         mSpeed = generator.nextInt(6) + 10;
 
         mBitmapXCorner = screenX;  //place enemy at the right edge of the screen
-        mBitmapYCorner = generator.nextInt(maxY) - mBitmap.getHeight();  //place enemy at a random Y position
+        mBitmapYCorner = ((generator.nextInt(maxY) - mBitmap.getHeight()) < 0) ? 0 : (generator.nextInt(maxY) - mBitmap.getHeight());  //place enemy at a random Y position
 
         mHitBox = new Rect(mBitmapXCorner, mBitmapYCorner, mBitmap.getWidth(), mBitmap.getHeight());
     }
