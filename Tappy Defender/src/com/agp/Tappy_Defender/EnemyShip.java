@@ -19,7 +19,7 @@ import java.util.Random;
 public class EnemyShip
 {
     private Bitmap mBitmap;
-    private int mBitmapXCorner, mBitmapYCorner;
+    private int mBitmapXCoordinate, mBitmapYCoordinate;
     private int mSpeed = -1;
 
     //detect enemy leaving screen
@@ -33,44 +33,74 @@ public class EnemyShip
     //A hit box for collision detection
     private Rect mHitBox;
 
+    Random generator;
+    int randomYCoordinate;
+
     public EnemyShip(Context context, int screenX, int screenY)
     {
-        //loads the graphic
-        mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy);
         maxX = screenX;
         maxY = screenY;
         minX = 0;
         minY = 0;
+        generator= new Random();
 
-        Random generator = new Random();
-        mSpeed = generator.nextInt(6) + 10;
 
-        mBitmapXCorner = screenX;  //place enemy at the right edge of the screen
-        mBitmapYCorner = ((generator.nextInt(maxY) - mBitmap.getHeight()) < 0) ? 0 : (generator.nextInt(maxY) - mBitmap.getHeight());  //place enemy at a random Y position
+        //load a random enemy
+        int whichBitmap = generator.nextInt(3); //0,1,2
+        switch (whichBitmap){
+            case 0:
+                mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy);
+                break;
+            case 1:
+                mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy2);
+                break;
+            case 2:
+                mBitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy3);
+                break;
+        }
 
-        mHitBox = new Rect(mBitmapXCorner, mBitmapYCorner, mBitmap.getWidth(), mBitmap.getHeight());
+        scaleBitmapEnemy();
+
+        //There is no particular reason for this range.
+        mSpeed = generator.nextInt(6) + 10;  //10, 11, 12, 13, 14, 15
+
+        mBitmapXCoordinate = screenX;  //place enemy at the right edge of the screen
+        randomYCoordinate = generator.nextInt(maxY);
+        mBitmapYCoordinate = ((randomYCoordinate - mBitmap.getHeight()) < minY) ? minY : (randomYCoordinate - mBitmap.getHeight());  //place enemy at a random Y position
+
+        mHitBox = new Rect(mBitmapXCoordinate, mBitmapYCoordinate, mBitmap.getWidth(), mBitmap.getHeight());
     }
 
     public void update(int playerSpeed)
     {
         //move enemy left
-        mBitmapXCorner -= playerSpeed;
-        mBitmapXCorner -= mSpeed;
+        mBitmapXCoordinate -= playerSpeed;
+        mBitmapXCoordinate -= mSpeed;
 
         //respawn when off screen
-        if (mBitmapXCorner < minX - mBitmap.getWidth())
+        if (mBitmapXCoordinate < minX - mBitmap.getWidth())
         {
-            Random generator = new Random();
-            mSpeed = generator.nextInt(10) + 10;
-            mBitmapXCorner = maxX;
-            mBitmapYCorner = generator.nextInt(maxY) - mBitmap.getHeight();
+            mSpeed = generator.nextInt(10) + 10;  //10 ... 19
+            mBitmapXCoordinate = maxX;
+            randomYCoordinate = generator.nextInt(maxY);
+            mBitmapYCoordinate = ((randomYCoordinate - mBitmap.getHeight()) < minY) ? minY : (randomYCoordinate - mBitmap.getHeight());
         }
 
         //refresh placement of hit box location
-        mHitBox.left = mBitmapXCorner;
-        mHitBox.top = mBitmapYCorner;
-        mHitBox.right = mBitmapXCorner + mBitmap.getWidth();
-        mHitBox.bottom = mBitmapYCorner + mBitmap.getHeight();
+        mHitBox.left = mBitmapXCoordinate;
+        mHitBox.top = mBitmapYCoordinate;
+        mHitBox.right = mBitmapXCoordinate + mBitmap.getWidth();
+        mHitBox.bottom = mBitmapYCoordinate + mBitmap.getHeight();
+    }
+
+
+    public void scaleBitmapEnemy(){
+        if (maxX < 1000){
+            mBitmap= Bitmap.createScaledBitmap(mBitmap, mBitmap.getWidth()/3, mBitmap.getHeight()/3, false);
+        }
+        else if (maxX < 1200){
+            mBitmap= Bitmap.createScaledBitmap(mBitmap, mBitmap.getWidth()/2, mBitmap.getHeight()/2, false);
+        }
     }
 
     public Bitmap getBitmap()
@@ -80,12 +110,12 @@ public class EnemyShip
 
     public int getX()
     {
-        return mBitmapXCorner;
+        return mBitmapXCoordinate;
     }
 
-    public int getBitmapYCorner()
+    public int getBitmapYCoordinate()
     {
-        return mBitmapYCorner;
+        return mBitmapYCoordinate;
     }
 
     public Rect getHitBox()
@@ -93,8 +123,8 @@ public class EnemyShip
         return mHitBox;
     }
 
-    public void setBitmapXCorner(int bitmapXCorner)
+    public void setBitmapXCoordinate(int bitmapXCoordinate)
     {
-        mBitmapXCorner = bitmapXCorner;
+        mBitmapXCoordinate = bitmapXCoordinate;
     }
 }

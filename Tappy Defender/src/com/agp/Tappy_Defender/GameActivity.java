@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.view.Display;
+import android.view.KeyEvent;
 
 /**
  * To comment out a line = ctrl + (keypad /)
@@ -51,5 +52,20 @@ public class GameActivity extends Activity
     {
         super.onResume();
         mGameView.resume();
+    }
+
+    /**
+     * Should the user press the back button on their device
+     * @param keyCode
+     * @param event
+     * @return
+     */
+    public boolean onKeyDown(int keyCode, KeyEvent event)
+    {
+        if (keyCode == KeyEvent.KEYCODE_BACK){
+            finish();
+            return true;
+        }
+        return false;
     }
 }
